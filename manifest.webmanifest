@@ -1,0 +1,11 @@
+{
+  "name": "坑道视倾角计算器",
+  "short_name": "视倾角",
+  "description": "离线计算坑道揭露地质界面的视倾角和空间关系",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1211",
+  "theme_color": "#101715",
+  "lang": "zh-CN"
+}

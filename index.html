@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101715">
+  <meta name="description" content="离线计算坑道揭露地质界面的视倾角和空间关系">
+  <title>坑道视倾角计算器</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root{color-scheme:dark;--bg:#0d1211;--panel:#151d1b;--panel2:#1b2522;--line:#2b3935;--text:#edf5f1;--muted:#9caea7;--green:#6fe0a9;--amber:#ffc861;--red:#ff817b}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#1c342c 0,#0d1211 42%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh}
+    main{width:min(720px,100%);margin:auto;padding:calc(22px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
+    header{margin-bottom:20px}.eyebrow{color:var(--green);font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}h1{font-size:clamp(28px,7vw,42px);line-height:1.08;margin:8px 0}.lead{color:var(--muted);margin:0;line-height:1.65}
+    .card{background:rgba(21,29,27,.94);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px;box-shadow:0 18px 50px #0004}
+    .inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}label{display:block;color:var(--muted);font-size:13px;font-weight:650}.unit{position:relative;margin-top:7px}.unit span{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--muted)}
+    input{width:100%;height:54px;border:1px solid var(--line);border-radius:12px;background:#0e1513;color:var(--text);font:700 20px/1 sans-serif;padding:0 34px 0 12px;outline:none}input:focus{border-color:var(--green);box-shadow:0 0 0 3px #6fe0a922}
+    .hint{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.5}.error{display:none;color:var(--red);background:#3a1e1d;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:14px}
+    .actions{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:16px}button{min-height:50px;border:0;border-radius:12px;padding:0 20px;font:800 16px/1 sans-serif;cursor:pointer}.primary{color:#082217;background:var(--green)}.secondary{color:var(--text);background:var(--panel2);border:1px solid var(--line)}
+    #result{display:none}.result-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.result-label{color:var(--muted);font-size:13px}.angle{font-size:54px;font-weight:850;letter-spacing:-.05em;color:var(--green);margin-top:3px}.badge{color:#132016;background:var(--amber);border-radius:99px;padding:7px 10px;font-size:12px;font-weight:850;white-space:nowrap}
+    .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}.fact{background:#0e1513;border-radius:12px;padding:12px}.fact b{display:block;font-size:15px;margin-top:6px;line-height:1.45}.fact small{color:var(--muted)}
+    .note{color:var(--muted);font-size:12px;line-height:1.6;margin:14px 0 0}
+    h2{font-size:18px;margin:0 0 12px}.history{display:grid;gap:8px}.history-empty{color:var(--muted);font-size:14px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0e1513;border-radius:10px;padding:11px 12px;font-size:13px}.history-row b{color:var(--green);font-size:17px}.history-row span{color:var(--muted)}
+    details summary{font-weight:800;cursor:pointer;list-style:none}details summary::-webkit-details-marker{display:none}.formula{color:var(--muted);line-height:1.75;font-size:14px}.math{color:var(--text);background:#0e1513;border-radius:10px;padding:12px;text-align:center;font-family:Georgia,serif;font-size:18px}.install{display:none;margin-top:10px;width:100%}
+    footer{text-align:center;color:#71827c;font-size:12px;margin-top:20px}
+    @media(max-width:560px){.inputs{grid-template-columns:1fr}.facts{grid-template-columns:1fr}.card{padding:15px}.actions{grid-template-columns:1fr 92px}.angle{font-size:48px}}
+    @media(prefers-reduced-motion:no-preference){.card{animation:up .35s ease both}@keyframes up{from{opacity:0;transform:translateY(8px)}}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">OFFLINE FIELD TOOL</div>
+    <h1>坑道视倾角计算器</h1>
+    <p class="lead">输入倾向、倾角和坑道前进方位，现场断网也能计算。</p>
+  </header>
+
+  <section class="card" aria-labelledby="input-title">
+    <h2 id="input-title">产状与坑道方向</h2>
+    <div class="inputs">
+      <label>倾向<div class="unit"><input id="dipDir" inputmode="decimal" placeholder="如 220" aria-describedby="azimuth-hint"><span>°</span></div></label>
+      <label>倾角<div class="unit"><input id="dip" inputmode="decimal" placeholder="如 65"><span>°</span></div></label>
+      <label>坑道前进方位<div class="unit"><input id="tunnel" inputmode="decimal" placeholder="如 150" aria-describedby="azimuth-hint"><span>°</span></div></label>
+    </div>
+    <div id="azimuth-hint" class="hint">方位角从正北起顺时针计；倾向、坑道方位可填 0–360°，倾角填 0–90°。</div>
+    <div id="error" class="error" role="alert"></div>
+    <div class="actions">
+      <button class="primary" id="calculate">开始计算</button>
+      <button class="secondary" id="clear">清空</button>
+    </div>
+    <button class="secondary install" id="install">安装到手机桌面</button>
+  </section>
+
+  <section class="card" id="result" aria-live="polite">
+    <div class="result-head">
+      <div><div class="result-label">视倾角</div><div class="angle" id="apparent">—</div></div>
+      <div class="badge" id="relation">—</div>
+    </div>
+    <div class="facts">
+      <div class="fact"><small>与走向锐夹角</small><b id="strikeAngle">—</b></div>
+      <div class="fact"><small>沿坑道前进方向</small><b id="forward">—</b></div>
+      <div class="fact"><small>左右壁关系</small><b id="walls">—</b></div>
+    </div>
+    <p class="note" id="interpretation"></p>
+  </section>
+
+  <section class="card">
+    <h2>最近计算</h2>
+    <div id="history" class="history"></div>
+  </section>
+
+  <details class="card">
+    <summary>公式与判断说明</summary>
+    <div class="formula">
+      <p class="math">tan α′ = tan α × sin θ</p>
+      <p>α 为真倾角，α′ 为视倾角，θ 为坑道方向与走向的锐夹角（0–90°）。走向按“倾向减 90°”换算。</p>
+      <p>上升/下降依据地质界面沿坑道方向的高程变化判断；左右壁关系按面向坑道前进方向观察。接近水平时显示“基本水平”，避免把微小舍入误差误判为方向。</p>
+      <p>本工具用于现场辅助计算。重要工程判断请结合原始测量记录、坐标约定和专业复核。</p>
+    </div>
+  </details>
+  <footer>数据只保存在本机浏览器内 · 最多保留 10 条记录</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id), rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+const els={dipDir:$("dipDir"),dip:$("dip"),tunnel:$("tunnel"),error:$("error"),result:$("result"),history:$("history")};
+const KEY="tunnel-apparent-dip-history-v1", EPS=0.0001;
+function normalizedDiff(a,b){return ((a-b+540)%360)-180}
+function readNumber(input,name,min,max){
+  const raw=input.value.trim();
+  if(raw==="")throw new Error("请填写"+name+"。");
+  const n=Number(raw);
+  if(!Number.isFinite(n)||n<min||n>max)throw new Error(name+"应在 "+min+"–"+max+"° 之间。");
+  return n===360?0:n;
+}
+function compute(dipDir,dip,tunnel){
+  const delta=normalizedDiff(tunnel,dipDir);
+  const theta=deg(Math.asin(Math.min(1,Math.abs(Math.cos(rad(delta))))));
+  const scale=dip===0?0:1;
+  const along=-scale*Math.cos(rad(delta));
+  const rightDir=(tunnel+90)%360;
+  const cross=-scale*Math.cos(rad(normalizedDiff(rightDir,dipDir)));
+  const angle=dip===90?(theta<EPS?0:90):deg(Math.atan(Math.tan(rad(dip))*Math.sin(rad(theta))));
+  return {angle,theta,along,cross};
+}
+function direction(value,positive,negative){return Math.abs(value)<EPS?"基本水平":value>0?positive:negative}
+function relation(theta){return theta<10?"近走向揭露":theta>80?"近倾向揭露":"斜交揭露"}
+function historyRead(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return []}}
+function historyWrite(row){const next=[row,...historyRead().filter(x=>!(x.dipDir===row.dipDir&&x.dip===row.dip&&x.tunnel===row.tunnel))].slice(0,10);localStorage.setItem(KEY,JSON.stringify(next));renderHistory()}
+function renderHistory(){
+  const rows=historyRead();
+  els.history.innerHTML=rows.length?rows.map(x=>`<div class="history-row"><span>倾向 ${x.dipDir}° · 倾角 ${x.dip}° · 坑道 ${x.tunnel}°</span><b>${x.angle.toFixed(1)}°</b></div>`).join(""):'<div class="history-empty">暂无记录。完成一次计算后会保存在这里。</div>';
+}
+function calculate(){
+  els.error.style.display="none";
+  try{
+    const dipDir=readNumber(els.dipDir,"倾向",0,360),dip=readNumber(els.dip,"倾角",0,90),tunnel=readNumber(els.tunnel,"坑道前进方位",0,360);
+    const r=compute(dipDir,dip,tunnel), forward=direction(r.along,"上升","下降"), walls=direction(r.cross,"从左壁向右壁上升","从左壁向右壁下降");
+    $("apparent").textContent=r.angle.toFixed(1)+"°";$("strikeAngle").textContent=r.theta.toFixed(1)+"°";$("forward").textContent=forward;$("walls").textContent=walls;$("relation").textContent=relation(r.theta);
+    $("interpretation").textContent=`面向坑道前进方向观察：地质界面沿前进方向${forward}；${walls}。`;
+    els.result.style.display="block";historyWrite({dipDir,dip,tunnel,angle:r.angle});
+  }catch(e){els.error.textContent=e.message;els.error.style.display="block";els.result.style.display="none"}
+}
+$("calculate").addEventListener("click",calculate);
+document.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter")calculate()}));
+$("clear").addEventListener("click",()=>{document.querySelectorAll("input").forEach(i=>i.value="");els.error.style.display="none";els.result.style.display="none";els.dipDir.focus()});
+renderHistory();
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("install").style.display="block"});
+$("install").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("install").style.display="none"});
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js");
+</script>
+</body>
+</html>
