@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#101715">
   <meta name="description" content="离线计算坑道揭露地质界面的视倾角和空间关系">
-  <title>坑道视倾角计算器</title>
+  <title>坑道压顶作图助手</title>
   <link rel="manifest" href="manifest.webmanifest">
   <style>
     :root{color-scheme:dark;--bg:#0d1211;--panel:#151d1b;--panel2:#1b2522;--line:#2b3935;--text:#edf5f1;--muted:#9caea7;--green:#6fe0a9;--amber:#ffc861;--red:#ff817b}
@@ -18,7 +18,9 @@
     .hint{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.5}.error{display:none;color:var(--red);background:#3a1e1d;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:14px}
     .actions{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:16px}button{min-height:50px;border:0;border-radius:12px;padding:0 20px;font:800 16px/1 sans-serif;cursor:pointer}.primary{color:#082217;background:var(--green)}.secondary{color:var(--text);background:var(--panel2);border:1px solid var(--line)}
     #result{display:none}.result-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.result-label{color:var(--muted);font-size:13px}.angle{font-size:54px;font-weight:850;letter-spacing:-.05em;color:var(--green);margin-top:3px}.badge{color:#132016;background:var(--amber);border-radius:99px;padding:7px 10px;font-size:12px;font-weight:850;white-space:nowrap}
-    .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}.fact{background:#0e1513;border-radius:12px;padding:12px}.fact b{display:block;font-size:15px;margin-top:6px;line-height:1.45}.fact small{color:var(--muted)}
+    .facts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:15px}.fact{background:#0e1513;border-radius:12px;padding:12px}.fact b{display:block;font-size:15px;margin-top:6px;line-height:1.45}.fact small{color:var(--muted)}
+    .draw-tip{margin-top:14px;background:#0d2119;border:1px solid #315d49;border-radius:14px;padding:14px}.draw-tip small{color:var(--green);font-weight:800}.draw-tip b{display:block;font-size:18px;line-height:1.55;margin-top:5px}.rule{color:var(--text);font-size:13px;line-height:1.7;margin:10px 0 0}
+    .sketch-wrap{margin-top:14px;background:#f3efe3;border-radius:14px;padding:10px;overflow:hidden}.sketch-head{display:flex;justify-content:space-between;gap:10px;color:#24302c;font-size:12px;font-weight:800;padding:2px 5px 8px}.sketch-head span:last-child{color:#8b3b2f}canvas{display:block;width:100%;height:360px;border-radius:8px;background:#faf7ed}
     .note{color:var(--muted);font-size:12px;line-height:1.6;margin:14px 0 0}
     h2{font-size:18px;margin:0 0 12px}.history{display:grid;gap:8px}.history-empty{color:var(--muted);font-size:14px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0e1513;border-radius:10px;padding:11px 12px;font-size:13px}.history-row b{color:var(--green);font-size:17px}.history-row span{color:var(--muted)}
     details summary{font-weight:800;cursor:pointer;list-style:none}details summary::-webkit-details-marker{display:none}.formula{color:var(--muted);line-height:1.75;font-size:14px}.math{color:var(--text);background:#0e1513;border-radius:10px;padding:12px;text-align:center;font-family:Georgia,serif;font-size:18px}.install{display:none;margin-top:10px;width:100%}
@@ -31,8 +33,8 @@
 <main>
   <header>
     <div class="eyebrow">OFFLINE FIELD TOOL</div>
-    <h1>坑道视倾角计算器</h1>
-    <p class="lead">输入倾向、倾角和坑道前进方位，现场断网也能计算。</p>
+    <h1>坑道压顶作图助手</h1>
+    <p class="lead">不只给角度，直接告诉你左壁、坑顶、右壁的线该往哪边画。</p>
   </header>
 
   <section class="card" aria-labelledby="input-title">
@@ -56,10 +58,20 @@
       <div><div class="result-label">视倾角</div><div class="angle" id="apparent">—</div></div>
       <div class="badge" id="relation">—</div>
     </div>
+    <div class="draw-tip">
+      <small>照着画</small>
+      <b id="drawCommand">—</b>
+      <p class="rule" id="angleRule"></p>
+    </div>
+    <div class="sketch-wrap">
+      <div class="sketch-head"><span>坑口在右 · 从右向左作图</span><span>红线＝产状线</span></div>
+      <canvas id="sketch" height="360" aria-label="左壁、坑顶、右壁压平展开作图示意"></canvas>
+    </div>
     <div class="facts">
       <div class="fact"><small>与走向锐夹角</small><b id="strikeAngle">—</b></div>
       <div class="fact"><small>沿坑道前进方向</small><b id="forward">—</b></div>
-      <div class="fact"><small>左右壁关系</small><b id="walls">—</b></div>
+      <div class="fact"><small>左壁红线</small><b id="leftWall">—</b></div>
+      <div class="fact"><small>右壁红线</small><b id="rightWall">—</b></div>
     </div>
     <p class="note" id="interpretation"></p>
   </section>
@@ -74,7 +86,8 @@
     <div class="formula">
       <p class="math">tan α′ = tan α × sin θ</p>
       <p>α 为真倾角，α′ 为视倾角，θ 为坑道方向与走向的锐夹角（0–90°）。走向按“倾向减 90°”换算。</p>
-      <p>上升/下降依据地质界面沿坑道方向的高程变化判断；左右壁关系按面向坑道前进方向观察。接近水平时显示“基本水平”，避免把微小舍入误差误判为方向。</p>
+      <p><b>视倾角从哪里量：</b>在左壁或右壁上，以沿坑道前进方向的水平边线为基准，量到红色产状线的锐夹角。壁顶边和壁底边互相平行，所以从哪一条量，角度数值都一样。</p>
+      <p><b>展开约定：</b>坑口在图纸右侧、前进方向向左；右壁在上、坑顶居中、左壁在下，按内倒式压平。因此同一个面在左右壁上看起来会朝相反方向斜，这是正常的。</p>
       <p>本工具用于现场辅助计算。重要工程判断请结合原始测量记录、坐标约定和专业复核。</p>
     </div>
   </details>
@@ -100,10 +113,45 @@ function compute(dipDir,dip,tunnel){
   const rightDir=(tunnel+90)%360;
   const cross=-scale*Math.cos(rad(normalizedDiff(rightDir,dipDir)));
   const angle=dip===90?(theta<EPS?0:90):deg(Math.atan(Math.tan(rad(dip))*Math.sin(rad(theta))));
-  return {angle,theta,along,cross};
+  const strike=(dipDir+270)%360;
+  const roofVector={x:Math.cos(rad(normalizedDiff(strike,tunnel))),y:Math.sin(rad(normalizedDiff(strike,tunnel)))};
+  return {angle,theta,along,cross,roofVector};
 }
 function direction(value,positive,negative){return Math.abs(value)<EPS?"基本水平":value>0?positive:negative}
 function relation(theta){return theta<10?"近走向揭露":theta>80?"近倾向揭露":"斜交揭露"}
+function wallWords(along){
+  if(Math.abs(along)<EPS)return {left:"沿坑道近水平",right:"沿坑道近水平",command:"左右壁都画成近水平线"};
+  if(along<0)return {left:"图纸上向左下斜",right:"图纸上向左上斜",command:"上方右壁红线向左上斜；下方左壁红线向左下斜"};
+  return {left:"图纸上向左上斜",right:"图纸上向左下斜",command:"上方右壁红线向左下斜；下方左壁红线向左上斜"};
+}
+function clipLine(cx,cy,vx,vy,x0,y0,x1,y1){
+  const hits=[],add=(t,x,y)=>{if(x>=x0-.1&&x<=x1+.1&&y>=y0-.1&&y<=y1+.1)hits.push({t,x,y})};
+  if(Math.abs(vx)>EPS){let t=(x0-cx)/vx;add(t,x0,cy+t*vy);t=(x1-cx)/vx;add(t,x1,cy+t*vy)}
+  if(Math.abs(vy)>EPS){let t=(y0-cy)/vy;add(t,cx+t*vx,y0);t=(y1-cy)/vy;add(t,cx+t*vx,y1)}
+  hits.sort((a,b)=>a.t-b.t);return hits.length>=2?[hits[0],hits[hits.length-1]]:null;
+}
+function drawSketch(r){
+  const canvas=$("sketch"),width=Math.max(300,canvas.clientWidth),dpr=Math.min(2,window.devicePixelRatio||1);
+  canvas.width=width*dpr;canvas.height=360*dpr;
+  const c=canvas.getContext("2d");c.scale(dpr,dpr);c.clearRect(0,0,width,360);
+  const x0=66,x1=width-16,ys=[38,125,215,302],mid=(x0+x1)/2;
+  c.fillStyle="#faf7ed";c.fillRect(0,0,width,360);
+  c.font='700 12px -apple-system,"Microsoft YaHei",sans-serif';c.textAlign="right";c.textBaseline="middle";c.fillStyle="#34433e";
+  ["右壁","坑顶","左壁"].forEach((t,i)=>c.fillText(t,x0-9,(ys[i]+ys[i+1])/2));
+  c.textAlign="left";c.font='11px -apple-system,"Microsoft YaHei",sans-serif';c.fillStyle="#6f7b76";
+  c.fillText("← 前进方向",x0,326);c.textAlign="right";c.fillText("坑口",x1,326);
+  c.strokeStyle="#82908a";c.lineWidth=1.2;
+  ys.forEach((y,i)=>{c.beginPath();c.moveTo(x0,y);c.lineTo(x1,y);c.stroke();c.fillStyle="#6f7b76";c.textAlign="left";if(i===0)c.fillText("右壁底",x0+5,y-9);if(i===1)c.fillText("右壁顶 / 坑顶右边",x0+5,y-9);if(i===2)c.fillText("坑顶左边 / 左壁顶",x0+5,y-9);if(i===3)c.fillText("左壁底",x0+5,y+10)});
+  c.setLineDash([4,5]);c.strokeStyle="#c8c4b8";c.beginPath();c.moveTo(x0,170);c.lineTo(x1,170);c.stroke();c.setLineDash([]);
+  const slope=Math.tan(rad(Math.min(r.angle,80))),span=x1-x0,wallDx=span*.42,wallDy=Math.min(35,wallDx*slope*.42);
+  const sign=r.along<0?-1:r.along>0?1:0;
+  function redLine(ax,ay,bx,by){c.strokeStyle="#c94d3f";c.lineWidth=4;c.lineCap="round";c.beginPath();c.moveTo(ax,ay);c.lineTo(bx,by);c.stroke();c.fillStyle="#c94d3f";c.beginPath();c.arc(bx,by,4,0,Math.PI*2);c.fill()}
+  redLine(mid-wallDx/2,(ys[0]+ys[1])/2+sign*wallDy/2,mid+wallDx/2,(ys[0]+ys[1])/2-sign*wallDy/2);
+  redLine(mid-wallDx/2,(ys[2]+ys[3])/2-sign*wallDy/2,mid+wallDx/2,(ys[2]+ys[3])/2+sign*wallDy/2);
+  const roof=clipLine(mid,(ys[1]+ys[2])/2,r.roofVector.x,r.roofVector.y,x0+4,ys[1]+5,x1-4,ys[2]-5);
+  if(roof)redLine(roof[0].x,roof[0].y,roof[1].x,roof[1].y);
+  c.fillStyle="#9b352c";c.textAlign="left";c.font='800 12px -apple-system,"Microsoft YaHei",sans-serif';c.fillText(r.angle.toFixed(1)+"°",mid+wallDx/2+6,(ys[0]+ys[1])/2-sign*wallDy/2);
+}
 function historyRead(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return []}}
 function historyWrite(row){const next=[row,...historyRead().filter(x=>!(x.dipDir===row.dipDir&&x.dip===row.dip&&x.tunnel===row.tunnel))].slice(0,10);localStorage.setItem(KEY,JSON.stringify(next));renderHistory()}
 function renderHistory(){
@@ -114,9 +162,12 @@ function calculate(){
   els.error.style.display="none";
   try{
     const dipDir=readNumber(els.dipDir,"倾向",0,360),dip=readNumber(els.dip,"倾角",0,90),tunnel=readNumber(els.tunnel,"坑道前进方位",0,360);
-    const r=compute(dipDir,dip,tunnel), forward=direction(r.along,"上升","下降"), walls=direction(r.cross,"从左壁向右壁上升","从左壁向右壁下降");
-    $("apparent").textContent=r.angle.toFixed(1)+"°";$("strikeAngle").textContent=r.theta.toFixed(1)+"°";$("forward").textContent=forward;$("walls").textContent=walls;$("relation").textContent=relation(r.theta);
-    $("interpretation").textContent=`面向坑道前进方向观察：地质界面沿前进方向${forward}；${walls}。`;
+    const r=compute(dipDir,dip,tunnel), forward=direction(r.along,"上升","下降"),words=wallWords(r.along);
+    $("apparent").textContent=r.angle.toFixed(1)+"°";$("strikeAngle").textContent=r.theta.toFixed(1)+"°";$("forward").textContent=forward;$("leftWall").textContent=words.left;$("rightWall").textContent=words.right;$("relation").textContent=relation(r.theta);
+    $("drawCommand").textContent=words.command+"；坑顶红线按图连接两壁顶边。";
+    $("angleRule").textContent=`视倾角 ${r.angle.toFixed(1)}°：在任一壁上，从沿坑道方向的水平边线量到红线；从壁顶边或壁底边量，数值相同。`;
+    $("interpretation").textContent="图中红线只表示方向和夹角关系，位置及宽度不代表现场实际桩号或地质体厚度。";
+    drawSketch(r);
     els.result.style.display="block";historyWrite({dipDir,dip,tunnel,angle:r.angle});
   }catch(e){els.error.textContent=e.message;els.error.style.display="block";els.result.style.display="none"}
 }
