@@ -1,11 +1,17 @@
 {
-  "name": "坑道压顶作图助手",
-  "short_name": "压顶作图",
-  "description": "离线计算视倾角并显示两壁一顶压平展开示意",
-  "start_url": "./index.html",
-  "scope": "./",
-  "display": "standalone",
-  "background_color": "#0d1211",
-  "theme_color": "#101715",
-  "lang": "zh-CN"
+  "id":"./",
+  "name":"坑道压顶作图助手 V4",
+  "short_name":"压顶作图",
+  "description":"梯形坑道真实交线、角度弧线和离线编录导出",
+  "start_url":"./index.html",
+  "scope":"./",
+  "display":"standalone",
+  "orientation":"any",
+  "background_color":"#0b1716",
+  "theme_color":"#102b26",
+  "lang":"zh-CN",
+  "icons":[
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
 }
